@@ -1,6 +1,8 @@
 const User = require("../model/UserModel"),
     ServiceError = require("../../utils/ServiceError"),
-    bcrypt = require("bcrypt")
+    bcrypt = require("bcrypt"),
+    jwt = require("jsonwebtoken")
+
 
 const EMAIL_REGEX = /^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$/,
     MIN_PASSWORD_LENGTH = 6
@@ -31,13 +33,27 @@ const UserService = {
             email,
             encryptedPassword: hash,
             verified: false
-        }).then(user => {
-            delete user.dataValues.encryptedPassword
-            return user.dataValues
+        }).then((user) => {
+            return  jwt.sign({ id: user.dataValues.id }, process.env.JWT_SECRET, { expiresIn: "1d" })
         }).catch(err => {
             // consider DbError with notNull violation
             throw new ServiceError(400, err)
         })
+    },
+    loginUser: async ({ email, password }) => {
+        const user = await User.findOne({ where: { email }})
+
+        if (!user) {
+            throw new ServiceError(400, "user-or-email-incorrect")
+        }
+
+        const isPasswordValid = await bcrypt.compare(password, user.dataValues.encryptedPassword)
+
+        if (!isPasswordValid) {
+            throw new ServiceError(400, "user-or-email-incorrect")
+        }
+
+        return jwt.sign({ id: user.dataValues.id }, process.env.JWT_SECRET, { expiresIn: "1d" })
     },
 
     isEmailUnique: async function(email) {
