@@ -44,13 +44,13 @@ const UserService = {
         const user = await User.findOne({ where: { email }})
 
         if (!user) {
-            throw new ServiceError(400, "user-or-email-incorrect")
+            throw new ServiceError(400, "password-or-email-incorrect")
         }
 
         const isPasswordValid = await bcrypt.compare(password, user.dataValues.encryptedPassword)
 
         if (!isPasswordValid) {
-            throw new ServiceError(400, "user-or-email-incorrect")
+            throw new ServiceError(400, "password-or-email-incorrect")
         }
 
         return jwt.sign({ id: user.dataValues.id }, process.env.JWT_SECRET, { expiresIn: "1d" })

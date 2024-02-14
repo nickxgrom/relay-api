@@ -32,7 +32,7 @@ const User = db.define("user", {
     verified: {
         type: DataTypes.BOOLEAN,
         default: false
-    }
+    },
 }, {
     toJSON: {
         getters: true,
