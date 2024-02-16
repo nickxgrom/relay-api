@@ -8,12 +8,14 @@ const express = require("express"),
     router = require("./src/controllers/index"),
     authMiddleware = require("./src/middleware/auth"),
     IdentityController = require("./src/controllers/IdentityController"),
+    EmployeeIdentityController = require("./src/controllers/EmployeeIdentityController"),
     cookieParser = require("cookie-parser")
 
 app.use(express.json())
 app.use(cookieParser())
 // without auth
 app.use(IdentityController)
+app.use(EmployeeIdentityController)
 // rest with auth
 app.use(authMiddleware)
 app.use(router)
