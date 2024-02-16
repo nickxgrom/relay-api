@@ -1,6 +1,6 @@
 const router = require("express").Router(),
     catchError = require("../../utils/catchError"),
-    service = require("./OrganizationService")
+    service = require("../services/OrganizationService")
 const ServiceError = require("../../utils/ServiceError")
 
 router.post("/organization", catchError(async (req, res, next) => {
