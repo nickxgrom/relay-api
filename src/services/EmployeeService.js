@@ -18,7 +18,7 @@ const EmployeeService = {
             throw new ServiceError(400, "incorrect-email")
         }
 
-        const existingEmployee = await Employee.findOne({ where: { email, organizationId } })
+        const existingEmployee = await Employee.findOne({ where: { email } })
         if (existingEmployee) {
             throw new ServiceError(400, "email-taken")
         }

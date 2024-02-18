@@ -1,5 +1,6 @@
 const OrganizationModel = require("../model/OrganizationModel"),
-    UserModel = require("../model/UserModel"), // Assuming you have User model
+    UserModel = require("../model/UserModel"),
+    EmployeeModel = require("../model/EmployeeModel"),
     ServiceError = require("../../utils/ServiceError")
 
 const EMAIL_REGEX = /^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$/
@@ -96,6 +97,15 @@ const OrganizationService = {
             .catch(err => {
                 throw new ServiceError(500, err)
             })
+    },
+    getAllEmployees: async (orgId, ownerId) => {
+        const organization = await OrganizationModel.findOne({ where: { id: orgId, owner: ownerId } })
+
+        if (!organization) {
+            throw new ServiceError(404, "organization-not-found")
+        }
+
+        return await EmployeeModel.findAll({where: { organizationId: orgId }})
     }
 }
 

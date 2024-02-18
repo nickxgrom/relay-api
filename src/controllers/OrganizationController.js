@@ -53,4 +53,18 @@ router.delete("/organization/:id", catchError(async (req, res, next) => {
     res.status(200).send()
 }))
 
+router.get("/organization/employees/:id", catchError(async (req, res, next) => {
+    let orgId = req.params.id
+
+    orgId = Number(orgId)
+
+    if (isNaN(orgId)) {
+        throw new ServiceError(400, "invalid-organization-id")
+    }
+
+    const employees = await service.getAllEmployees(orgId, req.user.id)
+
+    res.status(200).send(employees)
+}))
+
 module.exports = router
