@@ -8,6 +8,7 @@ module.exports = (req, res, next) => {
         req.user = jsonwebtoken.verify(token, process.env.JWT_SECRET)
         next()
     } catch (err) {
+        req.clearCookie("token")
         res.status(401).send("unauthorized")
     }
 }

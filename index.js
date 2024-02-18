@@ -22,6 +22,9 @@ app.use(router)
 
 app.use((err, req, res, next) => {
     if (err instanceof ServiceError) {
+        if (err.statusCode === 401) {
+            res.clearCookie("token")
+        }
         res.status(err.statusCode).send(err.message)
     } else next(err)
 })

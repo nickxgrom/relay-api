@@ -18,4 +18,21 @@ router.post("/employee-registration", catchError(async (req, res, next) => {
     res.status(200).send()
 }))
 
+router.post("/employee-login/:id", catchError(async (req, res, next) => {
+    const { email, password } = req.body
+
+    let organizationId = req.params.id
+
+    organizationId = Number(organizationId)
+
+    if (isNaN(organizationId)) {
+        throw new ServiceError(400, "invalid-organization-id")
+    }
+
+    const token = await EmployeeService.loginEmployee({email, password, organizationId})
+
+    res.cookie("token", token, { httpOnly: true })
+    res.status(200).send()
+}))
+
 module.exports = router

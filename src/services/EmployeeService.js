@@ -1,4 +1,5 @@
 const bcrypt = require("bcrypt")
+const jsonwebtoken = require("jsonwebtoken")
 const Employee = require("../model/EmployeeModel.js")
 const Organization = require("../model/OrganizationModel.js")
 const ServiceError = require("../../utils/ServiceError")
@@ -36,6 +37,31 @@ const EmployeeService = {
 
         return newEmployee
     },
+
+    loginEmployee: async ({ email, password, organizationId }) => {
+        const employee = await Employee.findOne({ where: { email, organizationId } })
+
+        if (!employee) {
+            throw new ServiceError(401, "employee-not-found")
+        }
+
+        const isPasswordCorrect = await bcrypt.compare(password, employee.encryptedPassword)
+
+        if (!isPasswordCorrect) {
+            throw new ServiceError(401, "incorrect-password")
+        }
+
+        if (!employee.verified) {
+            throw new ServiceError(403, "employee-is-not-verified")
+        }
+
+        const token = jsonwebtoken.sign({ employeeId: employee.id, organizationId }, process.env.JWT_SECRET, {
+            expiresIn: "24h",
+        })
+
+        return token
+    },
+
 }
 
 module.exports = EmployeeService
