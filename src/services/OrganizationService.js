@@ -106,7 +106,22 @@ const OrganizationService = {
         }
 
         return await EmployeeModel.findAll({where: { organizationId: orgId }})
-    }
+    },
+    getAllEmployeeById: async (employeeId, orgId, ownerId) => {
+        const organization = await OrganizationModel.findOne({ where: { id: orgId, owner: ownerId } })
+
+        if (!organization) {
+            throw new ServiceError(404, "organization-not-found")
+        }
+
+        const employee = await EmployeeModel.findOne({where: { organizationId: orgId, id: employeeId }})
+
+        if (!employee) {
+            throw new ServiceError(404, "employee-not-found")
+        }
+
+        return employee
+    },
 }
 
 module.exports = OrganizationService

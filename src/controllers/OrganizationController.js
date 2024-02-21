@@ -67,4 +67,22 @@ router.get("/organization/employees/:id", catchError(async (req, res, next) => {
     res.status(200).send(employees)
 }))
 
+router.get("/organization/employees/:orgId/:employeeId", catchError(async (req, res, next) => {
+    let orgId = req.params.orgId
+    let employeeId = req.params.employeeId
+
+    orgId = Number(orgId)
+    employeeId = Number(employeeId)
+
+    if (isNaN(orgId)) {
+        throw new ServiceError(400, "invalid-organization-id")
+    }
+
+    if (isNaN(employeeId)) {
+        throw new ServiceError(400, "invalid-employee-id")
+    }
+
+    res.status(200).send(await service.getAllEmployeeById(employeeId, orgId, req.user.id))
+}))
+
 module.exports = router
