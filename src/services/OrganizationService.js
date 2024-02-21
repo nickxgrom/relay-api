@@ -107,7 +107,7 @@ const OrganizationService = {
 
         return await EmployeeModel.findAll({where: { organizationId: orgId }})
     },
-    getAllEmployeeById: async (employeeId, orgId, ownerId) => {
+    getEmployeeById: async (employeeId, orgId, ownerId) => {
         const organization = await OrganizationModel.findOne({ where: { id: orgId, owner: ownerId } })
 
         if (!organization) {
@@ -122,6 +122,36 @@ const OrganizationService = {
 
         return employee
     },
+    updateEmployee: async (employeeId, orgId, ownerId, employeeData) => {
+        const employee = await EmployeeModel.findOne({where: { organizationId: orgId, id: employeeId }})
+
+        if (!employee) {
+            throw new ServiceError(404, "employee-not-found")
+        }
+
+        if (employeeData.email) {
+            if (!EMAIL_REGEX.test(employeeData.email)) {
+                throw new ServiceError(400, "incorrect-email")
+            }
+
+            const existingEmployee = await EmployeeModel.findOne({ where: { email: employeeData.email } })
+
+            if (existingEmployee && +existingEmployee.id !== employeeId) {
+                throw new ServiceError(400, "email-taken")
+            }
+        }
+
+        return EmployeeModel.update({
+            email: employeeData.email ?? employee.email,
+            verified: employeeData.verified ?? employee.verified,
+            name: employeeData.name ?? employee.name
+        }, { where: { id: employeeId } })
+            .then(() => {
+                return EmployeeModel.findByPk(employeeId)
+            }).catch(err => {
+                throw new ServiceError(500, err)
+            })
+    }
 }
 
 module.exports = OrganizationService
