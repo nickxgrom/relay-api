@@ -123,6 +123,10 @@ const OrganizationService = {
         return employee
     },
     updateEmployee: async (employeeId, orgId, ownerId, employeeData) => {
+        if (! (await OrganizationModel.findOne({ where: { id: orgId, owner: ownerId } }))) {
+            throw new ServiceError(404, "organization-not-found")
+        }
+
         const employee = await EmployeeModel.findOne({where: { organizationId: orgId, id: employeeId }})
 
         if (!employee) {
@@ -149,6 +153,22 @@ const OrganizationService = {
             .then(() => {
                 return EmployeeModel.findByPk(employeeId)
             }).catch(err => {
+                throw new ServiceError(500, err)
+            })
+    },
+    deleteEmployee: async (employeeId, orgId, ownerId) => {
+        if (! (await OrganizationModel.findOne({ where: { id: orgId, owner: ownerId } }))) {
+            throw new ServiceError(404, "organization-not-found")
+        }
+
+        const employee = await EmployeeModel.findOne({where: {id: employeeId, organizationId: orgId}})
+
+        if (!employee) {
+            throw new ServiceError(404, "employee-not-found")
+        }
+
+        return EmployeeModel.destroy({ where: { id: employeeId, organizationId: orgId } })
+            .catch(err => {
                 throw new ServiceError(500, err)
             })
     }
