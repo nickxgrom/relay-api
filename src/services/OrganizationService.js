@@ -68,7 +68,7 @@ const OrganizationService = {
 
             const existingOrganization = await OrganizationModel.findOne({ where: { email } })
 
-            if (existingOrganization && +existingOrganization.id !== id) {
+            if (existingOrganization && existingOrganization.id !== id) {
                 throw new ServiceError(400, "email-taken")
             }
         }
