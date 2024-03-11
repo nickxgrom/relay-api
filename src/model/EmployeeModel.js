@@ -23,7 +23,7 @@ const EmployeeModel = sequelize.define("employee", {
     },
     verified: {
         type: DataTypes.BOOLEAN,
-        defaultValue: 0,
+        defaultValue: false,
     }
 })
 
