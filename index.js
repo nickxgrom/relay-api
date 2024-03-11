@@ -9,8 +9,8 @@ const express = require("express"),
     authMiddleware = require("./src/middleware/auth"),
     IdentityController = require("./src/controllers/IdentityController"),
     EmployeeIdentityController = require("./src/controllers/EmployeeIdentityController"),
-    cookieParser = require("cookie-parser")
     cookieParser = require("cookie-parser"),
+    startWSServer = require("./src/websocket/index"),
     OpenChatController = require("./src/controllers/ChatController")
 
 app.use(express.json())
@@ -35,4 +35,5 @@ app.use((err, req, res, next) => {
 app.listen(PORT, async () => {
     await db.sync()
     console.log(`Server listening http://localhost:${PORT}`)
+    startWSServer(process.env.WS_PORT)
 })
