@@ -10,12 +10,15 @@ const express = require("express"),
     IdentityController = require("./src/controllers/IdentityController"),
     EmployeeIdentityController = require("./src/controllers/EmployeeIdentityController"),
     cookieParser = require("cookie-parser")
+    cookieParser = require("cookie-parser"),
+    OpenChatController = require("./src/controllers/ChatController")
 
 app.use(express.json())
 app.use(cookieParser())
 // without auth
 app.use(IdentityController)
 app.use(EmployeeIdentityController)
+app.use(OpenChatController)
 // rest with auth
 app.use(authMiddleware)
 app.use(router)
