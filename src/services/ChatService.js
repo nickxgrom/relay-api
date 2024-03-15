@@ -9,7 +9,13 @@ const ChatService = {
                 throw new ServiceError(500, err)
             })
     },
-    getChat: async () => {
+    getChat: async (chatId, orgId) => {
+        const chat = await ChatModel.findOne({ where: { id: chatId, organizationId: orgId } })
+
+        if (!chat) {
+            throw new ServiceError(404, "chat-not-found")
+        } else
+            return chat
 
     },
     archiveChat: async () => {

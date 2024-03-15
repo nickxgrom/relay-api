@@ -6,8 +6,7 @@ const jsonwebtoken = require("jsonwebtoken")
 router.post("/chat/:orgId", catchError(async (req, res, next) => {
     const chat = await service.createChat(req.params.orgId)
 
-    // возможно стоит зашить и orgId
-    const token = jsonwebtoken.sign({ chatId: chat.id }, process.env.JWT_SECRET, {
+    const token = jsonwebtoken.sign({ chatId: chat.id, organizationId: chat.organizationId }, process.env.JWT_SECRET, {
         expiresIn: "6h",
     })
 
