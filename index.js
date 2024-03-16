@@ -28,7 +28,7 @@ app.use((err, req, res, next) => {
         if (err.statusCode === 401) {
             res.clearCookie("token")
         }
-        res.status(err.statusCode).send(err.message)
+        res.status(err.statusCode).send({alias: err.message, error: err.error})
     } else next(err)
 })
 

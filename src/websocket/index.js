@@ -2,6 +2,7 @@ const {WebSocketServer} = require("ws"),
     cookieParser = require("cookie"),
     jsonwebtoken = require("jsonwebtoken"),
     ChatService = require("../services/ChatService"),
+    MessageService = require("../services/MessageService"),
     {SENDER} = require("../consts")
 
 const clients = new Map()
@@ -12,13 +13,14 @@ function startWSServer(PORT) {
     const wss = new WebSocketServer({ port: PORT })
 
     wss.on("connection", async function connection(ws, req) {
-        const {sender, chatId} = await identifyConnection(ws, req)
+        const {sender, chatId} = await identifyConnection(ws, req) ?? {}
+
+        if (!chatId) return
 
         ws.on("error", console.error)
 
         ws.on("message", function message(data) {
-            let msg = Buffer.from(data).toString("utf8")
-
+            const msg = Buffer.from(data).toString("utf8")
 
             if (sender === SENDER.OPERATOR) {
                 if (clients.has(chatId)) {
@@ -33,7 +35,7 @@ function startWSServer(PORT) {
                     operator.send(msg)
                 }
             }
-            // TODO: save msg
+            MessageService.saveMessage(chatId, {text: msg, sender})
         })
     })
 
