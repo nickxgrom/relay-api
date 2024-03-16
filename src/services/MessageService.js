@@ -17,7 +17,14 @@ const MessageService = {
     getChatMessageList: chatId => {
         return MessageModel.findAll({ where: { chatId: chatId } })
             .then(messages => {
-                return messages
+                return messages.map(message => {
+                    return {
+                        id: message.id,
+                        sender: message.sender,
+                        text: message.text,
+                        createdAt: message.createdAt
+                    }
+                })
             })
             .catch(err => {
                 throw new ServiceError(500, "internal-server-error", err)

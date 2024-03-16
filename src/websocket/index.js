@@ -9,13 +9,14 @@ const clients = new Map()
 const operators = new Map()
 
 function startWSServer(PORT) {
-
     const wss = new WebSocketServer({ port: PORT })
 
     wss.on("connection", async function connection(ws, req) {
         const {sender, chatId} = await identifyConnection(ws, req) ?? {}
 
         if (!chatId) return
+
+        await sendChatHistory(ws, chatId)
 
         ws.on("error", console.error)
 
@@ -35,7 +36,10 @@ function startWSServer(PORT) {
                     operator.send(msg)
                 }
             }
-            MessageService.saveMessage(chatId, {text: msg, sender})
+
+            MessageService.saveMessage(chatId, {text: msg, sender}).catch(err => {
+                ws.send({alias: "message-not-saved", error: err.error})
+            })
         })
     })
 
@@ -102,6 +106,10 @@ async function handleClientConnection(conn, data) {
     }
 }
 
+async function sendChatHistory(conn, chatId) {
+    const chatHistory = await MessageService.getChatMessageList(chatId)
+    conn.send(JSON.stringify(chatHistory))
+}
 
 function _getQuery(queryString) {
     const params = new URLSearchParams(queryString.slice(1))
