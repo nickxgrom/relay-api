@@ -3,7 +3,8 @@ const {WebSocketServer} = require("ws"),
     jsonwebtoken = require("jsonwebtoken"),
     ChatService = require("../services/ChatService"),
     MessageService = require("../services/MessageService"),
-    {SENDER} = require("../consts")
+    {SENDER, WS_MESSAGE_TYPE} = require("../consts"),
+    ServiceError = require("../../utils/ServiceError")
 
 const clients = new Map()
 const operators = new Map()
@@ -27,18 +28,18 @@ function startWSServer(PORT) {
                 if (clients.has(chatId)) {
                     const client = clients.get(chatId)
 
-                    client.send(msg)
+                    sendMessage(client, WS_MESSAGE_TYPE.MESSAGE, msg)
                 }
             } else if (sender === SENDER.CLIENT) {
                 if (operators.has(chatId)) {
                     const operator = operators.get(chatId)
 
-                    operator.send(msg)
+                    sendMessage(operator, WS_MESSAGE_TYPE.MESSAGE, msg)
                 }
             }
 
             MessageService.saveMessage(chatId, {text: msg, sender}).catch(err => {
-                ws.send({alias: "message-not-saved", error: err.error})
+                sendMessage(ws, WS_MESSAGE_TYPE.ERROR, new ServiceError(500, "message-not-saved", err.error))
             })
         })
     })
@@ -61,11 +62,11 @@ async function identifyConnection(conn, req) {
             const chatId = await handleOperatorConnection(conn, _getQuery(req.url), data)
             return {sender: SENDER.OPERATOR, chatId }
         } else {
-            conn.send(JSON.stringify({ status: 404, message: "unknown-sender" }))
+            sendMessage(conn, WS_MESSAGE_TYPE.ERROR, new ServiceError(404, "unknown-sender"))
             conn.close()
         }
     } catch (err) {
-        conn.send(JSON.stringify("token-expired"))
+        sendMessage(conn, WS_MESSAGE_TYPE.ERROR, new ServiceError(401, "token-expired"))
         conn.close()
     }
 }
@@ -74,41 +75,50 @@ async function handleOperatorConnection(conn, query, data) {
     if (query.chatId) {
         if (await ChatService.getChat(query.chatId, data.organizationId)) {
             if (operators.has(query.chatId)) {
-                conn.send(JSON.stringify({status: 403, message: "chat-already-serving"}))
+                sendMessage(conn, WS_MESSAGE_TYPE.ERROR, new ServiceError(403, "chat-already-serving"))
                 conn.close()
             } else {
                 operators.set(query.chatId, conn)
                 return query.chatId
             }
         } else {
-            conn.send(JSON.stringify({status: 404, message: "chat-not-exist"}))
+            sendMessage(conn, WS_MESSAGE_TYPE.ERROR, new ServiceError(404, "chat-not-exist"))
             conn.close()
         }
     } else {
-        conn.send(JSON.stringify({status: 400, message: "chatId-no-present"}))
+        sendMessage(conn, WS_MESSAGE_TYPE.ERROR, new ServiceError(400, "chatId-no-present"))
         conn.close()
     }
+}
+
+function sendMessage(conn, type, data) {
+    const wsMsgObject = {
+        type,
+        data,
+    }
+
+    conn.send(JSON.stringify(wsMsgObject))
 }
 
 async function handleClientConnection(conn, data) {
     const chat = await ChatService.getChat(data.chatId, data.organizationId)
     if (chat) {
         if (chat.archived) {
-            conn.send(JSON.stringify({status: 403, message: "chat-archived"}))
+            sendMessage(conn, WS_MESSAGE_TYPE.ERROR, new ServiceError(403, "chat-archived"))
             conn.close()
         } else {
             clients.set(data.chatId, conn)
             return data.chatId
         }
     } else {
-        conn.send(JSON.stringify({status: 404, message: "chat-not-exist"}))
+        sendMessage(conn, WS_MESSAGE_TYPE.ERROR, new ServiceError(404, "chat-not-exist"))
         conn.close()
     }
 }
 
 async function sendChatHistory(conn, chatId) {
     const chatHistory = await MessageService.getChatMessageList(chatId)
-    conn.send(JSON.stringify(chatHistory))
+    sendMessage(conn, WS_MESSAGE_TYPE.HISTORY, chatHistory)
 }
 
 function _getQuery(queryString) {
