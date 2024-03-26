@@ -1,16 +1,22 @@
 const router = require("express").Router(),
     catchError = require("../../utils/catchError"),
-    service = require("../services/ChatService")
-const jsonwebtoken = require("jsonwebtoken")
+    service = require("../services/ChatService"),
+    jsonwebtoken = require("jsonwebtoken"),
+    ServiceError = require("../../utils/ServiceError")
 
 router.post("/chat/:orgId", catchError(async (req, res, next) => {
+    if (req.params.orgId === "undefined") {
+        throw new ServiceError(400, "wrong-organization-id")
+    }
+
     const chat = await service.createChat(req.params.orgId)
 
     const token = jsonwebtoken.sign({ chatId: chat.id, organizationId: chat.organizationId }, process.env.JWT_SECRET, {
         expiresIn: "6h",
     })
 
-    res.cookie("token", token, { httpOnly: true })
+
+    res.cookie("relay-token", token, { maxAge: 6*60*60 })
     res.status(200).send(chat)
 }))
 

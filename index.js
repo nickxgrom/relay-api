@@ -10,9 +10,14 @@ const express = require("express"),
     IdentityController = require("./src/controllers/IdentityController"),
     EmployeeIdentityController = require("./src/controllers/EmployeeIdentityController"),
     cookieParser = require("cookie-parser"),
+    cors = require("cors"),
     startWSServer = require("./src/websocket/index"),
     OpenChatController = require("./src/controllers/ChatController")
 
+app.use(cors({
+    credentials: true,
+    origin: true,
+}))
 app.use(express.json())
 app.use(cookieParser())
 // without auth
@@ -26,7 +31,7 @@ app.use(router)
 app.use((err, req, res, next) => {
     if (err instanceof ServiceError) {
         if (err.statusCode === 401) {
-            res.clearCookie("token")
+            res.clearCookie("relay-token")
         }
         res.status(err.statusCode).send({alias: err.message, error: err.error})
     } else next(err)

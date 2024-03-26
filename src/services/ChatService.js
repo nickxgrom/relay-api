@@ -6,7 +6,7 @@ const ChatService = {
         return ChatModel.create({organizationId: orgId})
             .then(res => res)
             .catch(err => {
-                throw new ServiceError(500, err)
+                throw new ServiceError(500, "internal-server-error", err)
             })
     },
     getChat: async (chatId, orgId) => {
