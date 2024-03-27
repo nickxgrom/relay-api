@@ -15,9 +15,7 @@ router.post("/chat/:orgId", catchError(async (req, res, next) => {
         expiresIn: "6h",
     })
 
-
-    res.cookie("relay-token", token, { maxAge: 6*60*60 })
-    res.status(200).send(chat)
+    res.status(200).send({...chat.dataValues, token})
 }))
 
 module.exports = router

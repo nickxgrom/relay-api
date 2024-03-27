@@ -1,5 +1,4 @@
 const {WebSocketServer} = require("ws"),
-    cookieParser = require("cookie"),
     jsonwebtoken = require("jsonwebtoken"),
     ChatService = require("../services/ChatService"),
     MessageService = require("../services/MessageService"),
@@ -50,10 +49,16 @@ function startWSServer(PORT) {
 }
 
 async function identifyConnection(conn, req) {
-    const cookie = cookieParser.parse(req.headers.cookie)
+    const params = new URLSearchParams(req.url.slice(1))
+    const query = {}
+    for (const [key, value] of params) {
+        query[key] = value
+    }
+
+    const token = query["relay-token"]
 
     try {
-        const data = jsonwebtoken.verify(cookie.token, process.env.JWT_SECRET)
+        const data = jsonwebtoken.verify(token, process.env.JWT_SECRET)
 
         if (data.chatId) {
             const chatId = await handleClientConnection(conn, data)
