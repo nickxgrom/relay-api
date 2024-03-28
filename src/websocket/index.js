@@ -14,32 +14,35 @@ function startWSServer(PORT) {
     wss.on("connection", async function connection(ws, req) {
         const {sender, chatId} = await identifyConnection(ws, req) ?? {}
 
+        // TODO: if sender is client: notify all operators of this organization about new chat
+
         if (!chatId) return
 
         await sendChatHistory(ws, chatId)
 
         ws.on("error", console.error)
 
-        ws.on("message", function message(data) {
+        ws.on("message", async function message(data) {
             const msg = Buffer.from(data).toString("utf8")
+
+            // TODO: rework MessageModel to contain operator
+            const dbMessage = await MessageService.saveMessage(chatId, {text: msg, sender}).catch(err => {
+                sendMessage(ws, WS_MESSAGE_TYPE.ERROR, new ServiceError(500, "message-not-saved", err.error))
+            })
 
             if (sender === SENDER.OPERATOR) {
                 if (clients.has(chatId)) {
                     const client = clients.get(chatId)
 
-                    sendMessage(client, WS_MESSAGE_TYPE.MESSAGE, msg)
+                    sendMessage(client, WS_MESSAGE_TYPE.MESSAGE, dbMessage)
                 }
             } else if (sender === SENDER.CLIENT) {
                 if (operators.has(chatId)) {
                     const operator = operators.get(chatId)
 
-                    sendMessage(operator, WS_MESSAGE_TYPE.MESSAGE, msg)
+                    sendMessage(operator, WS_MESSAGE_TYPE.MESSAGE, dbMessage)
                 }
             }
-
-            MessageService.saveMessage(chatId, {text: msg, sender}).catch(err => {
-                sendMessage(ws, WS_MESSAGE_TYPE.ERROR, new ServiceError(500, "message-not-saved", err.error))
-            })
         })
     })
 
