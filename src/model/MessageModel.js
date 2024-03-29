@@ -16,6 +16,10 @@ const MessageModel = sequelize.define("message", {
         type: DataTypes.INTEGER,
         isIn: [[0, 1, 2]],
         allowNull: false
+    },
+    senderId: {
+        type: DataTypes.INTEGER,
+        allowNull: true
     }
 })
 

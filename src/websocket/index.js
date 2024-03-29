@@ -12,7 +12,7 @@ function startWSServer(PORT) {
     const wss = new WebSocketServer({ port: PORT })
 
     wss.on("connection", async function connection(ws, req) {
-        const {sender, chatId} = await identifyConnection(ws, req) ?? {}
+        const {sender, chatId, employeeId} = await identifyConnection(ws, req) ?? {}
 
         // TODO: if sender is client: notify all operators of this organization about new chat
 
@@ -25,8 +25,7 @@ function startWSServer(PORT) {
         ws.on("message", async function message(data) {
             const msg = Buffer.from(data).toString("utf8")
 
-            // TODO: rework MessageModel to contain operator
-            const dbMessage = await MessageService.saveMessage(chatId, {text: msg, sender}).catch(err => {
+            const dbMessage = await MessageService.saveMessage(chatId, {text: msg, sender, employeeId}).catch(err => {
                 sendMessage(ws, WS_MESSAGE_TYPE.ERROR, new ServiceError(500, "message-not-saved", err.error))
             })
 
@@ -68,7 +67,7 @@ async function identifyConnection(conn, req) {
             return {sender: SENDER.CLIENT, chatId}
         } else if (data.employeeId) {
             const chatId = await handleOperatorConnection(conn, _getQuery(req.url), data)
-            return {sender: SENDER.OPERATOR, chatId }
+            return {sender: SENDER.OPERATOR, chatId, employeeId: data.employeeId }
         } else {
             sendMessage(conn, WS_MESSAGE_TYPE.ERROR, new ServiceError(404, "unknown-sender"))
             conn.close()

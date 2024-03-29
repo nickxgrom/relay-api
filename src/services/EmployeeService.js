@@ -37,6 +37,9 @@ const EmployeeService = {
 
         return newEmployee
     },
+    getEmployee: async (uuid) => {
+        return await Employee.findByPk(uuid)
+    },
 
     loginEmployee: async ({ email, password, organizationId }) => {
         const employee = await Employee.findOne({ where: { email, organizationId } })
