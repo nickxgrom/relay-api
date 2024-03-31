@@ -21,4 +21,9 @@ router.post("/employee-login/:id", catchError(async (req, res, next) => {
     res.status(200).send()
 }))
 
+router.get("/organization-name/:orgId", catchError(async (req, res, next) => {
+    // TODO: consider about open only this method and move this to OrganizationService
+    res.status(200).send(await EmployeeService.getOrganizationName(req.params.orgId))
+}))
+
 module.exports = router

@@ -14,6 +14,10 @@ const EmployeeService = {
             throw new ServiceError(400, "organization-not-found")
         }
 
+        if (!name?.length) {
+            throw new ServiceError(400, "name-is-required")
+        }
+
         if (!EMAIL_REGEX.test(email)) {
             throw new ServiceError(400, "incorrect-email")
         }
@@ -23,7 +27,7 @@ const EmployeeService = {
             throw new ServiceError(400, "email-taken")
         }
         if (!password || password.length < MIN_PASSWORD_LENGTH) {
-            throw new ServiceError(400, "incorrect-password")
+            throw new ServiceError(400, "password-requires-six-character")
         }
 
         const encryptedPassword = await bcrypt.hash(password, 10)
@@ -64,6 +68,14 @@ const EmployeeService = {
 
         return token
     },
+    getOrganizationName: async (orgId) => {
+        const regex = /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$/i
+        if (!regex.test(orgId)) {
+            throw new ServiceError(400, "invalid-organization-id")
+        }
+
+        return { name: (await Organization.findByPk(orgId))?.name }
+    }
 
 }
 
