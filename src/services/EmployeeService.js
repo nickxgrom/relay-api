@@ -42,7 +42,15 @@ const EmployeeService = {
         return newEmployee
     },
     getEmployee: async (uuid) => {
-        return await Employee.findByPk(uuid)
+        const dbEmployee = await Employee.findByPk(uuid)
+
+        const employee = dbEmployee.dataValues
+        delete employee.encryptedPassword
+
+        return {
+            ...employee,
+            isOwner: false
+        }
     },
 
     loginEmployee: async ({ email, password, organizationId }) => {
@@ -55,7 +63,7 @@ const EmployeeService = {
         const isPasswordCorrect = await bcrypt.compare(password, employee.encryptedPassword)
 
         if (!isPasswordCorrect) {
-            throw new ServiceError(401, "incorrect-password")
+            throw new ServiceError(401, "password-or-email-incorrect")
         }
 
         if (!employee.verified) {

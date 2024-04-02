@@ -55,6 +55,17 @@ const UserService = {
 
         return jwt.sign({ id: user.dataValues.id }, process.env.JWT_SECRET, { expiresIn: "1d" })
     },
+    getUser: async (id) => {
+        const dbUser =  await User.findByPk(id)
+
+        const user = dbUser.dataValues
+        delete user.encryptedPassword
+
+        return {
+            ...user,
+            isOwner: true
+        }
+    },
 
     isEmailUnique: async function(email) {
         return !(await User.findOne({ where: { email } }))
