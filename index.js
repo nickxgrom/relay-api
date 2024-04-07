@@ -30,9 +30,6 @@ app.use(router)
 
 app.use((err, req, res, next) => {
     if (err instanceof ServiceError) {
-        if (err.statusCode === 401) {
-            res.clearCookie("relay-token")
-        }
         res.status(err.statusCode).send({alias: err.message, error: err.error})
     } else next(err)
 })
