@@ -35,9 +35,7 @@ router.get("/users", catchError(async (req, res, next) => {
             res.status(200).send(await EmployeeService.getEmployee(data.employeeId))
         }
     } catch {
-        const data = jsonwebtoken.decode(req.cookies?.["relay-token"], process.env.JWT_SECRET)
-
-        res.status(401).send(data.organizationId ? {organizationId: data.organizationId} : null)
+        res.sendStatus(401)
     }
 }) )
 
