@@ -11,6 +11,10 @@ const OrganizationService = {
             throw new ServiceError(400, "incorrect-email")
         }
 
+        if (!name) {
+            throw new ServiceError(400, "name-required")
+        }
+
         const user = await UserModel.findByPk(ownerId)
 
         if (!user) {
