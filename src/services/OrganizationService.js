@@ -65,6 +65,10 @@ const OrganizationService = {
             throw new ServiceError(404, "organization-not-found")
         }
 
+        if (!name) {
+            throw new ServiceError(400, "name-required")
+        }
+
         if (email) {
             if (!EMAIL_REGEX.test(email)) {
                 throw new ServiceError(400, "incorrect-email")
@@ -75,6 +79,8 @@ const OrganizationService = {
             if (existingOrganization && existingOrganization.id !== id) {
                 throw new ServiceError(400, "email-taken")
             }
+        } else {
+            throw new ServiceError(400, "email-required")
         }
 
         return OrganizationModel.update({
