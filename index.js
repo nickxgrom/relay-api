@@ -11,7 +11,7 @@ const express = require("express"),
     EmployeeIdentityController = require("./src/controllers/EmployeeIdentityController"),
     cookieParser = require("cookie-parser"),
     cors = require("cors"),
-    startWSServer = require("./src/websocket/index"),
+    {startWSServer, startChatListWSServer} = require("./src/websocket/index"),
     OpenChatController = require("./src/controllers/ChatController")
 
 app.use(cors({
@@ -38,4 +38,5 @@ app.listen(PORT, async () => {
     await db.sync()
     console.log(`Server listening http://localhost:${PORT}`)
     startWSServer(process.env.WS_PORT)
+    startChatListWSServer(process.env.WS_CHAT_LIST_PORT)
 })

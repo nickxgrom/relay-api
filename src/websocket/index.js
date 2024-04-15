@@ -6,15 +6,62 @@ const {WebSocketServer} = require("ws"),
     ServiceError = require("../../utils/ServiceError")
 
 const clients = new Map()
+const organizationMap = new Map()
 const operators = new Map()
+
+function startChatListWSServer(PORT) {
+    const wss = new WebSocketServer({ port: PORT })
+
+    wss.on("connection", async function connection(ws, req) {
+        const params = new URLSearchParams(req.url.slice(1))
+        const query = {}
+        for (const [key, value] of params) {
+            query[key] = value
+        }
+
+        const token = query["relay-token"]
+
+        try {
+            const data = jsonwebtoken.verify(token, process.env.JWT_SECRET)
+
+            if (data.employeeId && data.organizationId) {
+                if (operators.has(data.organizationId)) {
+                    operators.get(data.organizationId).set(data.employeeId, ws)
+                } else {
+                    operators.set(data.organizationId, new Map([[data.employeeId, ws]]))
+                }
+            } else {
+                sendMessage(ws, WS_MESSAGE_TYPE.ERROR, new ServiceError(404, "unknown-sender"))
+                ws.close()
+            }
+        } catch (err) {
+            sendMessage(ws, WS_MESSAGE_TYPE.ERROR, new ServiceError(401, "token-expired"))
+            ws.close()
+        }
+
+        ws.send(JSON.stringify(Array.from(clients.keys())))
+    })
+
+    wss.on("listening", () => {
+        console.log(`Websocket chat list is listening on ws://${PORT}`)
+    })
+}
 
 function startWSServer(PORT) {
     const wss = new WebSocketServer({ port: PORT })
 
     wss.on("connection", async function connection(ws, req) {
-        const {sender, chatId, employeeId} = await identifyConnection(ws, req) ?? {}
+        const {sender, chatId, employeeId, organizationId} = await identifyConnection(ws, req) ?? {}
+        console.log(organizationId, employeeId)
 
-        // TODO: if sender is client: notify all operators of this organization about new chat
+
+        if (sender === SENDER.CLIENT) {
+            const org = operators.get(organizationId)
+
+            org?.forEach((employee) => {
+                employee.send(JSON.stringify(chatId))
+            })
+        }
 
         if (!chatId) return
 
@@ -36,10 +83,13 @@ function startWSServer(PORT) {
                     sendMessage(client, WS_MESSAGE_TYPE.MESSAGE, dbMessage)
                 }
             } else if (sender === SENDER.CLIENT) {
-                if (operators.has(chatId)) {
-                    const operator = operators.get(chatId)
+                if (organizationMap.has(organizationId)) {
+                    const org = organizationMap.get(organizationId)
+                    if (org.has(chatId)) {
+                        const operator = org.get(chatId)
+                        sendMessage(operator, WS_MESSAGE_TYPE.MESSAGE, dbMessage)
+                    }
 
-                    sendMessage(operator, WS_MESSAGE_TYPE.MESSAGE, dbMessage)
                 }
             }
         })
@@ -63,11 +113,11 @@ async function identifyConnection(conn, req) {
         const data = jsonwebtoken.verify(token, process.env.JWT_SECRET)
 
         if (data.chatId) {
-            const chatId = await handleClientConnection(conn, data)
-            return {sender: SENDER.CLIENT, chatId}
+            const {organizationId, chatId} = await handleClientConnection(conn, data)
+            return {sender: SENDER.CLIENT, chatId, organizationId}
         } else if (data.employeeId) {
             const chatId = await handleOperatorConnection(conn, _getQuery(req.url), data)
-            return {sender: SENDER.OPERATOR, chatId, employeeId: data.employeeId }
+            return {sender: SENDER.OPERATOR, chatId, employeeId: data.employeeId, organizationId: data.organizationId }
         } else {
             sendMessage(conn, WS_MESSAGE_TYPE.ERROR, new ServiceError(404, "unknown-sender"))
             conn.close()
@@ -81,13 +131,16 @@ async function identifyConnection(conn, req) {
 async function handleOperatorConnection(conn, query, data) {
     if (query.chatId) {
         if (await ChatService.getChat(query.chatId, data.organizationId)) {
-            if (operators.has(query.chatId)) {
-                sendMessage(conn, WS_MESSAGE_TYPE.ERROR, new ServiceError(403, "chat-already-serving"))
-                conn.close()
+            if (organizationMap.has(data.organizationId)) {
+                const org = organizationMap.get(data.organizationId)
+                if (!org.has(query.chatId)) {
+                    org.set(query.chatId, conn)
+                }
             } else {
-                operators.set(query.chatId, conn)
-                return query.chatId
+                organizationMap.set(data.organizationId, new Map([[query.chatId, conn]]))
             }
+
+            return query.chatId
         } else {
             sendMessage(conn, WS_MESSAGE_TYPE.ERROR, new ServiceError(404, "chat-not-exist"))
             conn.close()
@@ -115,7 +168,7 @@ async function handleClientConnection(conn, data) {
             conn.close()
         } else {
             clients.set(data.chatId, conn)
-            return data.chatId
+            return { organizationId: data.organizationId, chatId: data.chatId }
         }
     } else {
         sendMessage(conn, WS_MESSAGE_TYPE.ERROR, new ServiceError(404, "chat-not-exist"))
@@ -137,4 +190,4 @@ function _getQuery(queryString) {
     return query
 }
 
-module.exports = startWSServer
+module.exports = {startWSServer, startChatListWSServer}

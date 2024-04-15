@@ -115,6 +115,7 @@ const OrganizationService = {
             throw new ServiceError(404, "organization-not-found")
         }
 
+        // TODO: remove password
         return await EmployeeModel.findAll({where: { organizationId: orgId }})
     },
     getEmployeeById: async (employeeId, orgId, ownerId) => {
