@@ -52,19 +52,12 @@ function startWSServer(PORT) {
 
     wss.on("connection", async function connection(ws, req) {
         const {sender, chatId, employeeId, organizationId} = await identifyConnection(ws, req) ?? {}
-        console.log(organizationId, employeeId)
 
-
-        if (sender === SENDER.CLIENT) {
-            const org = operators.get(organizationId)
-
-            org?.forEach((employee) => {
-                employee.send(JSON.stringify(chatId))
-            })
-        }
+        let isFirstMessageSent = false
 
         if (!chatId) return
 
+        // isChatHasHistory?
         await sendChatHistory(ws, chatId)
 
         ws.on("error", console.error)
@@ -83,13 +76,20 @@ function startWSServer(PORT) {
                     sendMessage(client, WS_MESSAGE_TYPE.MESSAGE, dbMessage)
                 }
             } else if (sender === SENDER.CLIENT) {
+                // need a filtration by isActive and time
+                const org = operators.get(organizationId)
+
+                org?.forEach((employee) => {
+                    employee.send(JSON.stringify({chatId, message: msg, time: Date.now()}))
+                })
+
+
                 if (organizationMap.has(organizationId)) {
                     const org = organizationMap.get(organizationId)
                     if (org.has(chatId)) {
                         const operator = org.get(chatId)
                         sendMessage(operator, WS_MESSAGE_TYPE.MESSAGE, dbMessage)
                     }
-
                 }
             }
         })
