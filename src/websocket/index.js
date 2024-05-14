@@ -38,12 +38,28 @@ function startChatListWSServer(PORT) {
             sendMessage(ws, WS_MESSAGE_TYPE.ERROR, new ServiceError(401, "token-expired"))
             ws.close()
         }
-
-        ws.send(JSON.stringify(Array.from(clients.keys())))
+        ws.send(JSON.stringify(await Promise.all(Array.from(clients.keys()).map(async key => ({
+            key,
+            lastMessage: (await MessageService.getChatMessageList(key))?.pop()
+        })))))
     })
 
     wss.on("listening", () => {
         console.log(`Websocket chat list is listening on ws://${PORT}`)
+    })
+
+    wss.on("close", function close() {
+        operators.forEach((value, key) => {
+            value.forEach((wsValue, wsKey) => {
+                if (wsValue.readyState === 3) {
+                    value.delete(wsKey)
+                }
+            })
+
+            if (value.size === 0) {
+                operators.delete(key)
+            }
+        })
     })
 }
 
