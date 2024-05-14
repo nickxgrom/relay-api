@@ -9,7 +9,7 @@ router.post("/users", catchError(async (req, res, next) => {
 
     const token = await UserService.createNewUser({firstName, lastName, patronymic, email, password})
 
-    res.cookie("relay-token", token, { httpOnly: true })
+    res.cookie("relay-token", token, {})
 
     // TODO: send email for verification
 
@@ -21,7 +21,7 @@ router.post("/login", catchError(async (req, res, next) => {
 
     const token = await UserService.loginUser({ email, password })
 
-    res.cookie("relay-token", token, { httpOnly: true })
+    res.cookie("relay-token", token, {})
 
     res.status(200).send()
 }))

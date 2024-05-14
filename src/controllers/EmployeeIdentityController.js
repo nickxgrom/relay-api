@@ -17,7 +17,7 @@ router.post("/employee-login/:id", catchError(async (req, res, next) => {
 
     const token = await EmployeeService.loginEmployee({email, password, organizationId})
 
-    res.cookie("relay-token", token, { httpOnly: true })
+    res.cookie("relay-token", token, {})
     res.status(200).send()
 }))
 
