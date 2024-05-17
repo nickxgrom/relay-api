@@ -69,11 +69,8 @@ function startWSServer(PORT) {
     wss.on("connection", async function connection(ws, req) {
         const {sender, chatId, employeeId, organizationId} = await identifyConnection(ws, req) ?? {}
 
-        let isFirstMessageSent = false
-
         if (!chatId) return
 
-        // isChatHasHistory?
         await sendChatHistory(ws, chatId)
 
         ws.on("error", console.error)
@@ -96,7 +93,7 @@ function startWSServer(PORT) {
                 const org = operators.get(organizationId)
 
                 org?.forEach((employee) => {
-                    employee.send(JSON.stringify({chatId, message: msg, time: Date.now()}))
+                    employee.send(JSON.stringify([{key: chatId, lastMessage: dbMessage }]))
                 })
 
 
@@ -108,6 +105,17 @@ function startWSServer(PORT) {
                     }
                 }
             }
+        })
+
+
+        ws.on("close", function close(conn) {
+
+            clients.forEach((value, key) => {
+                console.log(key)
+                if (value === conn) {
+                    clients.delete(key)
+                }
+            })
         })
     })
 
